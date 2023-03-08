@@ -10,11 +10,11 @@ If you have access to GitHub CodeSpaces, click the green "<> Code" button at the
 
 To open RStudio Server, click the Forwarded Ports "Radio" icon at the bottom of the VS Code Online window.
 
-![Forwarded Ports](img/forwarded_ports.png)
+![Forwarded Ports](img/)
 
 In the Ports tab, click the Open in Browser "World" icon that appears when you hover in the "Local Address" column for the Rstudio row.
 
-![Ports](img/ports.png)
+![Ports](img/)
 
 This will launch RStudio Server in a new window. Log in with the username and password `rstudio/rstudio`. 
 
