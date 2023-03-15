@@ -1,0 +1,111 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code.
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*.
+
+```{r}
+library(tidyr)
+library(tidyverse)
+library(ggplot2)
+library(GGally)
+library(caret)
+```
+
+```{r}
+data_raw <- read_csv("data/diabetes.csv")
+head(data_raw)
+```
+
+```{r}
+diab <- data_raw
+
+diab$Outcome <- factor(diab$Outcome, levels=c(0,1), labels=c("No","Yes"))
+
+diab <- diab %>% rename("Diabetes" = "Outcome")
+
+diab %>% head()
+```
+
+```{r}
+diab %>% summary()
+```
+
+```{r}
+ggpairs(diab, aes(color=Diabetes, alpha=0.75), lower=list(continuous="smooth"))+ theme_bw()+
+  
+  labs(title="Correlation Plot of Variance (diabetes)")+
+  
+  theme(plot.title=element_text(face='bold',color='black',hjust=0.5,size=12))
+```
+
+```{r}
+ggcorr(diab[,-9], name = "corr", label = TRUE)+
+  
+  theme(legend.position="none")+
+  
+  labs(title="Correlation Plot of Variance")+
+  
+  theme(plot.title=element_text(face='bold',color='black',hjust=0.5,size=12))
+```
+
+```{r}
+# Train/Test
+nrows <- nrow(diab)
+set.seed(123)
+index <- sample(1:nrows, 0.80 * nrows)
+
+train <- diab[index,]
+test <- diab[-index,]
+```
+
+```{r}
+# Checking Class Variable
+prop.table(table(train$Diabetes))
+prop.table(table(test$Diabetes))
+```
+
+```{r}
+library(caret)
+
+learn_glm <- train(Diabetes~., data=train, method='glm', family='binomial')
+pred_glm <- predict(learn_glm, test[,-9])
+cm_glm <- confusionMatrix(pred_glm, test$Diabetes)
+cm_glm
+```
+
+```{r}
+library(caret)
+
+learn_dt <- train(Diabetes~., data=train, method='rpart')
+pred_dt <- predict(learn_dt, test[,-9])
+cm_dt <- confusionMatrix(pred_dt, test$Diabetes)
+cm_dt
+```
+
+```{r}
+library(rpart.plot)
+rpart.plot(learn_dt$finalModel)
+```
+
+```{r}
+library(caret)
+library(ranger)
+
+learn_rf <- train(Diabetes~., data=train, method='ranger')
+pred_rf <- predict(learn_rf, test[,-9])
+cm_rf <- confusionMatrix(pred_rf, test$Diabetes)
+cm_rf
+```
+
+```{r}
+ctrl <- trainControl(method="cv", number=50)
+learn_dt_cv <- train(Diabetes~., data=train, trControl=ctrl, method='rpart')
+pred_dt_cv <- predict(learn_dt_cv, test[,-9])
+cm_dt_cv <- confusionMatrix(pred_dt_cv, test$Diabetes)
+cm_dt_cv
+
+```
