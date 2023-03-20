@@ -1,0 +1,292 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code.
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*.
+
+```{r}
+library(tidyr)
+library(tidyverse)
+library(ggplot2)
+library(GGally)
+library(caret) 
+library(duckdb)
+library(mice)
+library(pROC)
+library(xgboost)
+library(kernlab)
+library(optparse)
+```
+
+```{r}
+# get_data.R
+path <- "data/diabetes.csv"
+data_raw <- read_csv(path)
+
+# option_list = list(
+#   make_options(c("-i","--input"),
+#                type="character",
+#                default="diabetes",
+#                help="dataset file name",
+#                metavar="character"
+#               ),
+#   make_options(c("-o","--output"),
+#                type="character",
+#                default="data_raw.csv",
+#                help="output file name",
+#                metavar="character"
+#               )
+# );
+#opt_parser = OptionParser(option_list=option_list)
+#args = parse_args(opt_parser)
+#data_raw <- read_csv(concat("data/"),args[1])
+#write.csv(data_raw, concat("data/",args[2]),row.names=FALSE)
+```
+
+```{r}
+# fellows_task_1.R
+# SQL Exploratory Option
+
+con <- dbConnect(duckdb())
+
+duckdb_register(con, name = "data", df = data_raw)
+
+# Question: What SQL query can we run to explore the first few rows of the dataset?
+query <- "SELECT * FROM data limit 5"
+
+con %>% 
+  dbSendQuery(query) %>%
+  dbFetch()
+
+# data %>% summary() # dplyr package solution
+
+# Question: How can we get the count for number of instances of 0 values for Insulin?
+query <- 
+  "
+    SELECT Insulin, COUNT(*) as Zero_Count
+    FROM data
+    WHERE Insulin = 0
+    GROUP BY Insulin
+  "
+con %>%
+  dbSendQuery(query) %>%
+  dbFetch()
+
+# dbDisconnect(con)
+```
+
+```{r}
+# exploratory.R
+diab <- data_raw
+
+diab$Outcome <- factor(diab$Outcome, levels=c(0,1), labels=c("No","Yes"))
+
+diab <- diab %>% rename("Diabetes" = "Outcome")
+
+diab %>% head()
+
+# It would be a serious medical problem if a patient had an insulin level and skin thickness measurement of zero. As such, we can conclude that this dataset uses the number zero to
+# represent missing or null data.
+num_vars <- c('Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI','DiabetesPedigreeFunction', 'Age')
+data.frame(t(colSums(diab %>% select(all_of(num_vars)) == 0)))
+```
+
+```{r}
+# fellows_task_2.R
+
+# Question: How many rows are affected overall by having a 0 value in any of the variables: Glucose, BloodPressure, SkinThickness, Insulin, or BMI
+query <- 
+  "
+    SELECT COUNT(*)
+    FROM data
+    WHERE Glucose = 0 or BloodPressure = 0 or SkinThickness = 0 or Insulin = 0 or BMI = 0
+  "
+
+con %>%
+  dbSendQuery(query) %>%
+  dbFetch()
+
+# dbDisconnect(con)
+```
+
+```{r}
+# featurize_data.R
+diab <- data_raw
+
+diab$Outcome <- factor(diab$Outcome, levels=c(0,1), labels=c("No","Yes")) # making the outcome variable a factor as well as changing binary 0/1 to No/Yes for readibility
+
+diab <- diab %>% rename("Diabetes" = "Outcome") # changing name to Diabetes
+```
+
+```{r}
+# exploratory.R
+plt <- ggpairs(diab %>% select(Diabetes, Insulin, SkinThickness), aes(color=Diabetes, alpha=0.75), lower=list(continuous="smooth"), progress = FALSE)+ theme_bw()+
+  
+  labs(title="Correlation Plot of Variance (diabetes)")+
+  
+  theme(plot.title=element_text(face='bold',color='black',hjust=0.5,size=9))
+
+suppressWarnings(print(plt))
+# Approximately 50% of the patients did not have their insulin levels measured. This causes concern that the doctors may have only measured insulin levels in unhealthy looking patients or only measured insulin levels 
+# after having first made a preliminary diagnosis. If that were true then this would be a form of data leakage, and it would mean that future models would not generalize well to data collected. 
+
+```
+
+```{r, fig.width=10, fig.height=11}
+plt <- ggpairs(diab, aes(color=Diabetes, alpha=0.75), lower=list(continuous="smooth"), progress = FALSE)+ theme_bw()+
+  
+  labs(title="Correlation Plot of Variance (diabetes)")+
+  
+  theme(plot.title=element_text(face='bold',color='black',hjust=0.5,size=9))
+
+suppressWarnings(print(plt))
+# The Insulin and SkinThickness measurements are not highly correlated with any given outcome -- and as such we can rule out our concern of data leakage. The zero values in these categories are still erroneous, 
+# however, and therefore should not be included in our model. It is best to replace these values with some distribution of values near to the median measurement.
+```
+
+```{r}
+ggcorr(diab[,-9], name = "corr", label = TRUE)+
+  
+  theme(legend.position="none")+
+  
+  labs(title="Correlation Plot of Variance")+
+  
+  theme(plot.title=element_text(face='bold',color='black',hjust=0.5,size=12))
+```
+
+```{r}
+# clean_data.R
+diab_na <- diab %>% mutate_at(num_vars, ~na_if(.,0))
+
+# TO DO: Export this dataset as data_clean
+```
+
+```{r}
+# split_data.R
+nrows <- nrow(diab)
+set.seed(123)
+index <- sample(1:nrows, 0.75 * nrows)
+
+train_na <- diab_na[index,]
+test_na <- diab_na[-index,]
+
+# TO DO: Export the train/test csv files
+```
+
+```{r}
+# clean_split_data.py
+# Given over 5% of the Insulin and SkinThickness values ended up being NA, should drop all NA rows
+
+train_na %>% select(-c(Insulin, SkinThickness))
+test_na %>% select(-c(Insulin, SkinThickness))
+
+train <- train_na %>% drop_na()
+test <- test_na %>% drop_na()
+
+# OR
+
+train <- train_na %>% drop_na()
+test <- test_na %>% drop_na()
+
+# OR 
+
+# caret doesn't play too well with tibbles, so will convert to data.frame
+library(mice)
+train_na <- data.frame(train_na)
+test_na <- data.frame(test_na)
+
+train_pre_obj <- preProcess(train_na, method = "knnImpute", k = 20) # medianImpute / pca / bagImpute
+train <- predict(train_pre_obj, train_na)
+test <- predict(train_pre_obj, test_na)
+```
+
+```{r}
+# Checking Class Variable
+prop.table(table(train$Diabetes))
+prop.table(table(test$Diabetes))
+```
+
+```{r}
+fitControl <- trainControl(method = "cv", # k-fold Cross Validation (repeatedcv), bootstrap (boot) default, correlation (corr)
+                           number = 10, # default is random 10 - 25
+                           classProbs = TRUE, # default is FALSE
+                           summaryFunction = twoClassSummary) # default is defaultSummary
+
+learn_glm <- train(Diabetes~., data=train, method='glm', family='binomial', trControl = fitControl)
+pred_glm <- predict(learn_glm, test[,-9])
+cm_glm <- confusionMatrix(pred_glm, test$Diabetes)
+results_glm <- c(cm_glm$byClass['Sensitivity'], cm_glm$byClass['Specificity'], cm_glm$byClass['F1'])
+
+learn_dt <- train(Diabetes~., data=train, method='rpart', trControl = fitControl)
+pred_dt <- predict(learn_dt, test[,-9])
+cm_dt <- confusionMatrix(pred_dt, test$Diabetes)
+results_dt <- c(cm_dt$byClass['Sensitivity'], cm_dt$byClass['Specificity'], cm_dt$byClass['F1'])
+
+learn_rf <- train(Diabetes~., data=train, method='ranger', trControl = fitControl)
+pred_rf <- predict(learn_rf, test[,-9])
+cm_rf <- confusionMatrix(pred_rf, test$Diabetes)
+results_rf <- c(cm_rf$byClass['Sensitivity'], cm_rf$byClass['Specificity'], cm_rf$byClass['F1'])
+
+learn_knn <- train(Diabetes~., data=train, method='knn', tuneGrid = expand.grid(.k=c(2:20)), trControl = fitControl)
+pred_knn <- predict(learn_knn, test[,-9])
+cm_knn <- confusionMatrix(pred_knn, test$Diabetes)
+results_knn <- c(cm_knn$byClass['Sensitivity'], cm_knn$byClass['Specificity'], cm_knn$byClass['F1'])
+
+xgb_grid_1 = expand.grid(
+  nrounds = 50,
+  eta = c(0.03),
+  max_depth = 1,
+  gamma = 0,
+  colsample_bytree = 0.6,
+  min_child_weight = 1,
+  subsample = 0.5
+)
+learn_xgbTree <- train(Diabetes~., data=train, method="xgbTree", tuneGrid=xgb_grid_1, trControl = fitControl)
+pred_xgbTree <- predict(learn_xgbTree, test[,-9])
+cm_xgbTree <- confusionMatrix(pred_xgbTree, test$Diabetes)
+results_xgbTree <- c(cm_xgbTree$byClass['Sensitivity'], cm_xgbTree$byClass['Specificity'], cm_xgbTree$byClass['F1'])
+
+learn_svm <- train(Diabetes~., data=train, method='svmLinear', trControl = fitControl)
+pred_svm <- predict(learn_svm, test[,-9])
+cm_svm <- confusionMatrix(pred_svm, test$Diabetes)
+results_svm <- c(cm_svm$byClass['Sensitivity'], cm_svm$byClass['Specificity'], cm_svm$byClass['F1'])
+
+results <- data.frame(rbind(results_glm, results_dt, results_rf, results_knn, results_xgbTree, results_svm))
+names(results) <- c("Sensitivity", "Specificity", "F1")
+results
+```
+
+```{r}
+# Need to have TrainControl set & metric = "ROC" in train()
+model_list <- list(GLM=learn_glm, DT=learn_dt , RF=learn_rf, kNN=learn_knn, xgbTree=learn_xgbTree)
+resamples <- resamples(model_list)
+bwplot(resamples, metric="ROC") 
+```
+
+```{r}
+library(rpart.plot)
+rpart.plot(learn_dt$finalModel)
+```
+
+```{r}
+# train_model.R
+fitControl <- trainControl(method = "cv", # k-fold Cross Validation (repeatedcv), bootstrap (boot) default, correlation (corr)
+                           number = 10, # default is random 10 - 25
+                           classProbs = TRUE, # default is FALSE
+                           summaryFunction = twoClassSummary) # default is defaultSummary
+
+model <- train(Diabetes~., data=train, method='glm', family='binomial', trControl = fitControl)
+
+# TO DO: Save 'model' to RDS to be saveRDS(), import files
+```
+
+```{r}
+# evaluate_model.R
+predict <- predict(model, test[,-9])
+cm <- confusionMatrix(predict, test$Diabetes)
+
+# TO DO: Import files
+```
