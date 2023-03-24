@@ -26,11 +26,10 @@ RUN install2.r --error --skipinstalled -n -1 \
         GGally \
         rpart.plot \
         modeltools \
-    && rm -rf /tmp/downloaded_packages \
     && R -q -e 'remotes::install_github("https://github.com/dcomtois/summarytools/tree/0-8-9")'
 
-COPY install_packages.R /tmp/setup/R
-RUN Rscript /tmp/setup/R/install_packages.R
+COPY install_packages.R /tmp/downloaded_packages
+RUN Rscript /tmp/downloaded_packages/install_packages.R && rm -rf /tmp/downloaded_packages
 
 # Install Python packages
 COPY requirements.txt /tmp/pip-tmp/
