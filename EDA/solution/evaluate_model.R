@@ -24,4 +24,4 @@ fit <- readRDS(paste0("data/",args[2]))
 
 predict <- predict(fit, test[,-nrow(test)])
 cm <- confusionMatrix(predict, as.factor(test$Diabetes))
-print(cm)
+capture.output(cm, file="results.txt")
