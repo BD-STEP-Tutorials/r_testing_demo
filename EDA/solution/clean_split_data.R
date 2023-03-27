@@ -1,7 +1,7 @@
 # clean_split_data.R
 library(optparse)
-library(tidyverse)
-library(caret)
+suppressMessages(library(tidyverse))
+suppressMessages(library(caret))
 
 option_list = list(
   make_option(c("-i","--input1"),

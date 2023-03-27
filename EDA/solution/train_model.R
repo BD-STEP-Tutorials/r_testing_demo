@@ -1,5 +1,5 @@
 # train_model.R
-library(caret)
+suppressMessages(library(caret))
 library(optparse)
 set.seed(123)
 

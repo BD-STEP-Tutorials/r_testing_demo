@@ -1,6 +1,6 @@
 # split_data.R
 library(optparse)
-library(tidyverse)
+suppressMessages(library(tidyverse))
 set.seed(123)
 
 option_list = list(

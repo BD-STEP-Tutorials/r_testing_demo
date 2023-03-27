@@ -1,5 +1,5 @@
 # evaluate_model.R
-library(caret)
+suppressMessages(library(caret))
 library(optparse)
 
 option_list = list(

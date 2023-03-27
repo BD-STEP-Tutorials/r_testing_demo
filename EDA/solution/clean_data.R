@@ -1,6 +1,6 @@
 # clean_data.R
 library(optparse)
-library(tidyverse)
+suppressMessages(library(tidyverse))
 
 option_list = list(
   make_option(c("-i","--input"),
