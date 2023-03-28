@@ -22,6 +22,19 @@ This will launch RStudio Server in a new window. Log in with the username and pa
 
 In RStudio, use the File menu to open the `/workspaces`, folder and then browse to open the file `devcontainers-rstudio`
 
+## Expectations of this Presentation
+-   This presentation will expand upon the *Good Practices in Reproducible Data Science* presented at the last BD-STEP Roundtable.
+
+-   Using R (and a bit of SQL) this interactive presentation will transform a data exploration exercise into a more easily systematic data pipeline.
+
+-   You (the fellow) will explore data and fill in certain snippets of code within the R Markdown file (EDA/EDA.Rmd) to complete the data pipeline in SQL and R.
+
+-   The data pipeline will consist of .R pipeline files as well as a make/batch file to execute them in chronological order.
+
+-   By the end of this, you should have a completed pipeline that will produce the 'best' producing ML algorithm and metrics for predicting Outcome/Diabetes.
+
+![Flow Chart](/misc/img/flow_diagram.png)
+
 # Resources and Links
 
 * [GitHub Codespaces](https://github.com/features/codespaces) - Available with GitHub Enterprise and GitHub Education
@@ -29,3 +42,4 @@ In RStudio, use the File menu to open the `/workspaces`, folder and then browse 
 * [Dev Containers](https://containers.dev/) - Overview and specification
 * [Dev Containers in Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) - Remote-Containers extension 
 * [Visual Studio Code](https://code.visualstudio.com/) - Free editor available for Windows, Mac and Linux
+* [Pima Indians Diabetes Database](https://www.kaggle.com/datasets/uciml/pima-indians-diabetes-database) - Predict the onset of diabetes based on diagnostic measures
