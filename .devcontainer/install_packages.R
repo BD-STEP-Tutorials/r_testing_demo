@@ -3,6 +3,8 @@ install.packages("pROC")
 install.packages("xgboost")
 install.packages("kernlab")
 install.packages("optparse")
+install.packages("caTools")
+install.packages("RANN")
 install.packages("devtools")
 
 require(devtools)

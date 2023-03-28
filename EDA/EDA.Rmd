@@ -41,6 +41,7 @@ library(kernlab)
 library(optparse)
 library(gbm)
 library(caTools)
+library(RANN)
 ```
 
 ## Importing the Dataset
@@ -50,7 +51,7 @@ library(caTools)
 -   The dataset consists of several medical predictor variables and one target variable, Outcome. Predictor variables includes the number of pregnancies the patient has had, their BMI, insulin level, age, and so on.
 
 ```{r}
-path <- "data/diabetes.csv"
+path <- "/workspaces/DevContainer-RStudio/data/diabetes.csv"
 data_raw <- read_csv(path)
 ```
 
@@ -66,7 +67,7 @@ data_raw <- read_csv(path)
 # option_list = list(
 #   make_option(c("-i","--input"),
 #                type="character",
-#                default="diabetes",
+#                default="diabetes.csv",
 #                help="dataset file name",
 #                metavar="character"
 #               ),
@@ -80,6 +81,7 @@ data_raw <- read_csv(path)
 # 
 # opt_parser = OptionParser(option_list=option_list)
 # args = parse_args(opt_parser)
+# 
 # data_raw <- read.csv(paste0("data/",args[1]))
 # write.csv(data_raw, paste0("data/",args[2]),row.names=FALSE)
 ```
@@ -183,7 +185,7 @@ con %>%
   dbFetch()
 
 # Close the connection and free resources (memory) 
-dbDisconnect(con)
+dbDisconnect(con, shutdown=TRUE)
 ```
 
 ### Pipeline Step 2: featurize_data.R
@@ -194,7 +196,7 @@ dbDisconnect(con)
 
 ```{r}
 # library(optparse)
-# library(tidyverse)
+# suppressMessages(library(tidyverse))
 # 
 # option_list = list(
 #   make_option(c("-i","--input"),
@@ -214,7 +216,7 @@ dbDisconnect(con)
 # opt_parser = OptionParser(option_list=option_list)
 # args = parse_args(opt_parser)
 # 
-# data <- as_tibble(read_csv(paste0("data/",args[1])))
+# data <- as_tibble(read_csv(paste0("data/",args[1]), col_types=cols()))
 # data <- data %>% rename("Diabetes" = "Outcome")
 # data$Diabetes <- factor(data$Diabetes, levels=c(0,1), labels=c("No","Yes"))
 # write.csv(data, paste0("data/",args[2]),row.names=FALSE)
@@ -272,7 +274,7 @@ diab_na <- diab %>% mutate_at(num_vars, ~na_if(.,0))
 
 ```{r}
 # library(optparse)
-# library(tidyverse)
+# suppressMessages(library(tidyverse))
 # 
 # option_list = list(
 #   make_option(c("-i","--input"),
@@ -318,9 +320,9 @@ test_na <- diab_na[-index,]
 -   Output: csv files of the train and test datasets
 
 ```{r}
-# #split_data.R
 # library(optparse)
-# library(tidyverse)
+# suppressMessages(library(tidyverse))
+# set.seed(123)
 # 
 # option_list = list(
 #   make_option(c("-i","--input"),
@@ -348,8 +350,7 @@ test_na <- diab_na[-index,]
 # data <- read.csv(paste0("data/",args[1]))
 # 
 # nrows <- nrow(data)
-# set.seed(123)
-# index <- sample(1:nrows, 0.75 * nrows)
+# index <- sample(1:nrows, 0.7 * nrows)
 # 
 # train <- data[index,]
 # test <- data[-index,]
@@ -413,9 +414,8 @@ test <- predict(train_pre_obj, test_na_df)
 
 ```{r}
 # library(optparse)
-# library(tidyverse)
-# library(mice)
-# library(caret)
+# suppressMessages(library(tidyverse))
+# suppressMessages(library(caret))
 # 
 # option_list = list(
 #   make_option(c("-i","--input1"),
@@ -446,13 +446,13 @@ test <- predict(train_pre_obj, test_na_df)
 # 
 # opt_parser = OptionParser(option_list=option_list)
 # args = parse_args(opt_parser)
-# train_na <- read.csv(paste0("data/",args[1]))
-# test_na <- read.csv(paste0("data/",args[2]))
+# train_raw <- read.csv(paste0("data/",args[1]))
+# test_raw <- read.csv(paste0("data/",args[2]))
 # 
 # ### Desired split Cleaning Code needs to replace the code between the commented lines:
 # ### START of cleaning method code segment ###
-# train <- train_na %>% drop_na()
-# test <- test_na %>% drop_na()
+# train <- train_raw %>% drop_na()
+# test <- test_raw %>% drop_na()
 # ### END of cleaning method code segment ###
 # 
 # write.csv(train, paste0("data/",args[3]),row.names=FALSE)
@@ -499,7 +499,7 @@ The function `trainControl` generates parameters that further control how models
 fitControl <- trainControl(method = "cv", # repeatedcv, boot (default)
                              number = 10, # default is random 10 - 25
                              classProbs = TRUE, # default is FALSE
-                             summaryFunction = twoClassSummary, # default is defaultSummary
+                             summaryFunction = twoClassSummary, # defaultSummary
                              repeats = 5 # default is 1
                            )
 
@@ -590,7 +590,7 @@ cm_svm
 -   Output: .rds file fit on the training dataset
 
 ```{r}
-# library(caret)
+# suppressMessages(library(caret))
 # library(optparse)
 # set.seed(123)
 # 
@@ -615,15 +615,22 @@ cm_svm
 # 
 # ### Desired fit/model  Code needs to replace the code between the commented lines:
 # ### START of fit code segment ###
+#
 # fitControl <- trainControl(method = "cv",
 #                            number = 10, 
-#                            classProbs = TRUE, 
+#                            classProbs = TRUE,
 #                            summaryFunction = twoClassSummary,
 #                            )
+# 
+# fit <- train(Diabetes~.,
+#              data=train,
+#              method='rpart',
+#              trControl = fitControl,
+#              metric="Spec")
 #
-# fit <- train(Diabetes~., data=train, method='rpart', trControl = fitControl, metric="Spec")
 # ### END of fit code segment ###
-#
+# 
+# 
 # saveRDS(fit, file=paste0("data/",args[2]))
 ```
 
@@ -651,7 +658,7 @@ colAUC(predict, test[,ncolumns], plotROC=TRUE)
 -   Output: Print out in the console the appropriate confusion matrix and other performance metrics.
 
 ```{r}
-# library(caret)
+# suppressMessages(library(caret))
 # library(optparse)
 # 
 # option_list = list(
@@ -676,12 +683,21 @@ colAUC(predict, test[,ncolumns], plotROC=TRUE)
 # 
 # predict <- predict(fit, test[,-nrow(test)])
 # cm <- confusionMatrix(predict, as.factor(test$Diabetes))
-# print(cm)
+# capture.output(cm, file="report/results.txt")
 ```
+
+## Running it all in Codespace
+
+Once you have correctly filled in all of the blank code in *clean_split_data.R* and *train_model.R* files in your Codespace, go to the Codespace terminal and enter the following commands sequentially:
+
+-   *make all*
+-   *make clean*
+
+These commands will run a batch/make file which will run all of the R files in the pipeline in the appropriate order and then clean up any unnecessary files.
 
 ## Future Discussions
 
-1.  Tuning your parameters (expand.grid, trainControl, etc.)
+1.  Tuning your parameters (expand.grid, trainControl, etc.) for trainControl and ML Algorithms
 
 2.  Feature Selection Algorithms (correlation, RF, etc.)
 
