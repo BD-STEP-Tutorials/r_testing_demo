@@ -695,6 +695,8 @@ Once you have correctly filled in all of the blank code in *clean_split_data.R* 
 
 These commands will run a batch/make file which will run all of the R files in the pipeline in the appropriate order and then clean up any unnecessary files.
 
+![](https://raw.githubusercontent.com/TRMichelson/DevContainer-RStudio/main/misc/img/terminal_final.PNG)
+
 ## Future Discussions
 
 1.  Tuning your parameters (expand.grid, trainControl, etc.) for trainControl and ML Algorithms
