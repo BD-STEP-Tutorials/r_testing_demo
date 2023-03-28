@@ -1,5 +1,7 @@
+.PHONY: all clean
+
 .SILENT all: data/data_raw.csv data/data_featured.csv data/data_clean.csv \
-data/train_raw.csv data/train.csv data/model.rds data/results.txt
+data/train_raw.csv data/train.csv data/model.rds report/results.txt
 
 data/data_raw.csv: src/get_data.R
 	Rscript src/get_data.R -i diabetes.csv -o data_raw.csv 
@@ -25,6 +27,16 @@ data/model.rds: src/train_model.R
 	Rscript src/train_model.R -i train.csv -o model.rds 
 	@echo "train_model.R Complete"
 
-data/results.txt: src/evaluate_model.R
+report/results.txt: src/evaluate_model.R
 	Rscript src/evaluate_model.R -i test.csv -I model.rds
 	@echo "evaluate_model Complete"
+
+clean: 
+	rm -r data/data_raw.csv
+	rm -r data/data_featured.csv
+	rm -r data/data_clean.csv
+	rm -r data/train_raw.csv
+	rm -r data/test_raw.csv
+	rm -r data/train.csv
+	rm -r data/test.csv
+	rm -r data/model.rds
