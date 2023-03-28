@@ -1,11 +1,32 @@
 ---
-title: "R Notebook"
-output: html_notebook
----
+title: "R Exploratory Analysis and Pipeline Building"
 
 This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code.
 
 Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*.
+---
+
+# R Exploratory Analysis and Pipeline Building
+
+-   This presentation will expand upon the *Good Practices in Reproducible Data Science* presented at the last BD-STEP Roundtable.
+
+-   Using R (and a bit of SQL) this interactive presentation will transform a data exploration exercise into a more easily systematic data pipeline.
+
+-   You (the fellow) will be exploring data and filling in certain snippets of code within the R Markdown file to complete the data pipeline in SQL and R.
+
+-   The data pipeline will consist of .R pipelines as well as a batch file to execute them in chronological order.
+
+-   By the end of this, you should have a completed pipeline that will produce the 'best' producing ML algorithm and metrics for predicting Outcome/Diabetes.
+
+## Pima Indians Diabetes Data
+
+-   This dataset is originally from the National Institute of Diabetes and Digestive and Kidney Diseases. The objective of the dataset is to diagnostically predict whether or not a patient has diabetes, based on certain diagnostic measurements included in the dataset. Several constraints were placed on the selection of these instances from a larger database. In particular, all patients here are females at least 21 years old of Pima Indian heritage.
+
+-   The dataset consists of several medical predictor variables and one target variable, Outcome. Predictor variables includes the number of pregnancies the patient has had, their BMI, insulin level, age, and so on.
+
+## Library Packages
+
+The function *library()* loads and attaches add-on packages to the session.
 
 ```{r}
 library(tidyr)
@@ -14,56 +35,90 @@ library(ggplot2)
 library(GGally)
 library(caret) 
 library(duckdb)
-library(mice)
 library(pROC)
 library(xgboost)
 library(kernlab)
 library(optparse)
+library(gbm)
+library(caTools)
 ```
 
+## Importing the Dataset
+
+-   This dataset is originally from the National Institute of Diabetes and Digestive and Kidney Diseases. The objective of the dataset is to diagnostically predict whether or not a patient has diabetes, based on certain diagnostic measurements included in the dataset. Several constraints were placed on the selection of these instances from a larger database. In particular, all patients here are females at least 21 years old of Pima Indian heritage.
+
+-   The dataset consists of several medical predictor variables and one target variable, Outcome. Predictor variables includes the number of pregnancies the patient has had, their BMI, insulin level, age, and so on.
+
 ```{r}
-# get_data.R
 path <- "data/diabetes.csv"
 data_raw <- read_csv(path)
+```
 
+### Pipeline Step 1: get_data.R
+
+-   *Step 1* of the Data Pipeline
+-   Input: takes in input and output commands via the terminal. Defining what the name of the dataset file of interest is and what the created csv file will be named
+-   Output: A csv file of the raw data
+
+```{r}
+# library(optparse)
+# 
 # option_list = list(
-#   make_options(c("-i","--input"),
+#   make_option(c("-i","--input"),
 #                type="character",
 #                default="diabetes",
 #                help="dataset file name",
 #                metavar="character"
 #               ),
-#   make_options(c("-o","--output"),
+#   make_option(c("-o","--output"),
 #                type="character",
 #                default="data_raw.csv",
 #                help="output file name",
 #                metavar="character"
 #               )
 # );
-#opt_parser = OptionParser(option_list=option_list)
-#args = parse_args(opt_parser)
-#data_raw <- read_csv(concat("data/"),args[1])
-#write.csv(data_raw, concat("data/",args[2]),row.names=FALSE)
+# 
+# opt_parser = OptionParser(option_list=option_list)
+# args = parse_args(opt_parser)
+# data_raw <- read.csv(paste0("data/",args[1]))
+# write.csv(data_raw, paste0("data/",args[2]),row.names=FALSE)
 ```
 
-```{r}
-# fellows_task_1.R
-# SQL Exploratory Option
+### Task 1: Exploring the Data
 
+-   Given not everyone is accustomed to the R-language, we will make use of SQL to write some queries to explore some of the data at a high level.
+
+```{r}
+# Create an in-memory Database Management System
 con <- dbConnect(duckdb())
 
+# Register an R dataframe as a virtual table in the 
 duckdb_register(con, name = "data", df = data_raw)
 
-# Question: What SQL query can we run to explore the first few rows of the dataset?
-query <- "SELECT * FROM data limit 5"
+# Question 1: What SQL query can we run to explore the first few rows of the dataset?
+query <-
+    "SELECT * 
+     FROM data 
+     limit 5
+    "
 
+# Send the SQL query via the connection to the virtual table and fetch the result
 con %>% 
   dbSendQuery(query) %>%
   dbFetch()
 
-# data %>% summary() # dplyr package solution
+# Close the connection and free resources (memory) 
+dbDisconnect(con)
+```
 
-# Question: How can we get the count for number of instances of 0 values for Insulin?
+```{r}
+# Create an in-memory Database Management System
+con <- dbConnect(duckdb())
+
+# Register an R dataframe as a virtual table in the 
+duckdb_register(con, name = "data", df = data_raw)
+
+# Question 2: How can we get the count for number of instances of 0 values for Insulin?
 query <- 
   "
     SELECT Insulin, COUNT(*) as Zero_Count
@@ -71,33 +126,51 @@ query <-
     WHERE Insulin = 0
     GROUP BY Insulin
   "
+
+# Send the SQL query via the connection to the virtual table and fetch the result
 con %>%
   dbSendQuery(query) %>%
   dbFetch()
 
-# dbDisconnect(con)
+# Close the connection and free resources (memory) 
+dbDisconnect(con)
 ```
 
+## Featurize the Data
+
+-   For most modules/packages, making the class/categorical variable a factor makes the process a whole lot smoother and eliminates any confusion between you and the module.
+-   Renaming the Outcome variable to Diabetes as well as labeling 0/1 to No/Yes for readability.
+
 ```{r}
-# exploratory.R
 diab <- data_raw
 
 diab$Outcome <- factor(diab$Outcome, levels=c(0,1), labels=c("No","Yes"))
 
 diab <- diab %>% rename("Diabetes" = "Outcome")
 
-diab %>% head()
+diab %>% head() # Similar to the SQL query from Task 1
+```
 
-# It would be a serious medical problem if a patient had an insulin level and skin thickness measurement of zero. As such, we can conclude that this dataset uses the number zero to
-# represent missing or null data.
-num_vars <- c('Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI','DiabetesPedigreeFunction', 'Age')
+It would be a serious medical problem if a patient had an insulin level and skin thickness measurement of zero. As such, we can conclude that this dataset uses the number zero to represent missing or null data.
+
+```{r}
+num_vars <- c('Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 
+              'BMI','DiabetesPedigreeFunction', 'Age')
 data.frame(t(colSums(diab %>% select(all_of(num_vars)) == 0)))
 ```
 
-```{r}
-# fellows_task_2.R
+### Task 2: Exploring the Missing Data
 
-# Question: How many rows are affected overall by having a 0 value in any of the variables: Glucose, BloodPressure, SkinThickness, Insulin, or BMI
+```{r}
+# Create an in-memory Database Management System
+con <- dbConnect(duckdb())
+
+# Register an R dataframe as a virtual table in the 
+duckdb_register(con, name = "data", df = diab)
+
+# Question 3: How many rows are affected overall by having a value of 0 
+# in any of the variables: Glucose, BloodPressure, SkinThickness, Insulin, or BMI
+
 query <- 
   "
     SELECT COUNT(*)
@@ -109,184 +182,507 @@ con %>%
   dbSendQuery(query) %>%
   dbFetch()
 
-# dbDisconnect(con)
+# Close the connection and free resources (memory) 
+dbDisconnect(con)
 ```
 
+### Pipeline Step 2: featurize_data.R
+
+-   *Step 2* of the Data Pipeline
+-   Input: takes in input and output commands via the terminal. Defining what the name of the initial raw data file of interest and what the created csv file will be named that will have features factorized.
+-   Output: A csv file of the featurized data
+
 ```{r}
-# featurize_data.R
-diab <- data_raw
-
-diab$Outcome <- factor(diab$Outcome, levels=c(0,1), labels=c("No","Yes")) # making the outcome variable a factor as well as changing binary 0/1 to No/Yes for readibility
-
-diab <- diab %>% rename("Diabetes" = "Outcome") # changing name to Diabetes
+# library(optparse)
+# library(tidyverse)
+# 
+# option_list = list(
+#   make_option(c("-i","--input"),
+#               type="character",
+#               default="data_raw.csv",
+#               help="dataset file name",
+#               metavar="character"
+#   ),
+#   make_option(c("-o","--output"),
+#               type="character",
+#               default="data_featured.csv",
+#               help="output file name",
+#               metavar="character"
+#   )
+# );
+# 
+# opt_parser = OptionParser(option_list=option_list)
+# args = parse_args(opt_parser)
+# 
+# data <- as_tibble(read_csv(paste0("data/",args[1])))
+# data <- data %>% rename("Diabetes" = "Outcome")
+# data$Diabetes <- factor(data$Diabetes, levels=c(0,1), labels=c("No","Yes"))
+# write.csv(data, paste0("data/",args[2]),row.names=FALSE)
 ```
 
-```{r}
-# exploratory.R
-plt <- ggpairs(diab %>% select(Diabetes, Insulin, SkinThickness), aes(color=Diabetes, alpha=0.75), lower=list(continuous="smooth"), progress = FALSE)+ theme_bw()+
-  
-  labs(title="Correlation Plot of Variance (diabetes)")+
-  
-  theme(plot.title=element_text(face='bold',color='black',hjust=0.5,size=9))
+## Data Visualization
 
+Examining out two trouble variables: Insulin and SkinThickness
+
+```{r message=FALSE}
+plt <- ggpairs(diab %>% select(Diabetes, Insulin, SkinThickness), 
+               aes(color=Diabetes, alpha=0.75), lower=list(continuous="smooth"), 
+               progress = FALSE) + 
+               theme_bw() +
+               labs(title="Correlation Plot of Variance (diabetes)")+
+               theme(plot.title=element_text(face='bold',color='black',hjust=0.5,size=9)
+        )
 suppressWarnings(print(plt))
-# Approximately 50% of the patients did not have their insulin levels measured. This causes concern that the doctors may have only measured insulin levels in unhealthy looking patients or only measured insulin levels 
-# after having first made a preliminary diagnosis. If that were true then this would be a form of data leakage, and it would mean that future models would not generalize well to data collected. 
-
 ```
 
-```{r, fig.width=10, fig.height=11}
-plt <- ggpairs(diab, aes(color=Diabetes, alpha=0.75), lower=list(continuous="smooth"), progress = FALSE)+ theme_bw()+
-  
-  labs(title="Correlation Plot of Variance (diabetes)")+
-  
-  theme(plot.title=element_text(face='bold',color='black',hjust=0.5,size=9))
+-   Approximately 50% of the patients did not have their insulin levels measured. This causes concern that the doctors may have only measured insulin levels in unhealthy looking patients or only measured insulin levels after having first made a preliminary diagnosis.
 
+-   If that were true then this would be a form of data leakage, and it would mean that future models would not generalize well to data collected.
+
+```{r fig.height=11, fig.width=10, message=FALSE, warning=FALSE}
+plt <- ggpairs(diab, 
+                aes(color=Diabetes, alpha=0.75), 
+                lower=list(continuous="smooth"), 
+                progress = FALSE) + 
+                theme_bw() +
+                labs(title="Correlation Plot of Variance (diabetes)") +
+                theme(plot.title=element_text(face='bold',color='black',hjust=0.5,size=9)
+        )
 suppressWarnings(print(plt))
-# The Insulin and SkinThickness measurements are not highly correlated with any given outcome -- and as such we can rule out our concern of data leakage. The zero values in these categories are still erroneous, 
-# however, and therefore should not be included in our model. It is best to replace these values with some distribution of values near to the median measurement.
 ```
 
-```{r}
-ggcorr(diab[,-9], name = "corr", label = TRUE)+
-  
-  theme(legend.position="none")+
-  
-  labs(title="Correlation Plot of Variance")+
-  
-  theme(plot.title=element_text(face='bold',color='black',hjust=0.5,size=12))
-```
+-   The Insulin and SkinThickness measurements are not highly correlated with any given outcome \-- and as such we can rule out our concern of data leakage. The zero values in these categories are still erroneous, however, and therefore should not be included in our model.
+
+## Cleaning the Full Data
+
+-   Given the context of the dataset as well as the individual distributions seen for the variables, it's safe to assume that any 0 values should be considered NA values.
+-   Changing the values to NA will be easier to read into many ML libraries
 
 ```{r}
-# clean_data.R
+num_vars <- c('Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 
+              'BMI','DiabetesPedigreeFunction', 'Age')
 diab_na <- diab %>% mutate_at(num_vars, ~na_if(.,0))
-
-# TO DO: Export this dataset as data_clean
 ```
 
+### Pipeline Step 3: clean_data.R
+
+-   *Step 3* of the Data Pipeline
+-   Input: takes in input and output commands via the terminal. Defining what the name of the featurized data file of interest and what the created csv file will be named that will have appropriate 0 values converted to NA.
+-   Output: A csv file of the cleaned full data
+
 ```{r}
-# split_data.R
+# library(optparse)
+# library(tidyverse)
+# 
+# option_list = list(
+#   make_option(c("-i","--input"),
+#               type="character",
+#               default="data_featured.csv",
+#               help="dataset file name",
+#               metavar="character"
+#   ),
+#   make_option(c("-o","--output"),
+#               type="character",
+#               default="data_clean.csv",
+#               help="output file name",
+#               metavar="character"
+#   )
+# );
+# 
+# opt_parser = OptionParser(option_list=option_list)
+# args = parse_args(opt_parser)
+# data <- read.csv(paste0("data/",args[1]))
+# 
+# non_zero_vars <- c('Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI','DiabetesPedigreeFunction', 'Age')
+# data <- data %>% mutate_at(non_zero_vars, ~na_if(.,0))
+# write.csv(data, paste0("data/",args[2]),row.names=FALSE)
+```
+
+## Splitting the Data
+
+-   Shuffle and divide the full, cleaned dataset into train (70%) and test dataset (30%)
+
+```{r}
 nrows <- nrow(diab)
 set.seed(123)
-index <- sample(1:nrows, 0.75 * nrows)
+index <- sample(1:nrows, 0.7 * nrows)
 
 train_na <- diab_na[index,]
 test_na <- diab_na[-index,]
-
-# TO DO: Export the train/test csv files
 ```
 
+### Pipeline Step 4: split_data.R
+
+-   *Step 4* of the Data Pipeline
+-   Input: takes in input and output commands via the terminal. Defining what the name of the cleaned full data file of interest and what the created csv files will be named that will have appropriate train and test rows.
+-   Output: csv files of the train and test datasets
+
 ```{r}
-# clean_split_data.py
-# Given over 5% of the Insulin and SkinThickness values ended up being NA, should drop all NA rows
+# #split_data.R
+# library(optparse)
+# library(tidyverse)
+# 
+# option_list = list(
+#   make_option(c("-i","--input"),
+#               type="character",
+#               default="data_clean.csv",
+#               help="dataset file name",
+#               metavar="character"
+#   ),
+#   make_option(c("-o","--output1"),
+#               type="character",
+#               default="train_raw.csv",
+#               help="output file names",
+#               metavar="character"
+#   ),
+#   make_option(c("-O","--output2"),
+#               type="character",
+#               default="test_raw.csv",
+#               help="output file names",
+#               metavar="character"
+#   )
+# );
+# 
+# opt_parser = OptionParser(option_list=option_list)
+# args = parse_args(opt_parser)
+# data <- read.csv(paste0("data/",args[1]))
+# 
+# nrows <- nrow(data)
+# set.seed(123)
+# index <- sample(1:nrows, 0.75 * nrows)
+# 
+# train <- data[index,]
+# test <- data[-index,]
+# 
+# write.csv(train, paste0("data/",args[2]),row.names=FALSE)
+# write.csv(test, paste0("data/",args[3]),row.names=FALSE)
+```
 
-train_na %>% select(-c(Insulin, SkinThickness))
-test_na %>% select(-c(Insulin, SkinThickness))
+## Cleaning the Split Data
 
+-   There are various ways to handle the missing NA values from the variables in the dataset
+
+    -   Simply delete all rows where there are missing values (likely data is missing at random)
+
+    -   Delete all columns where over 5% of a values are missing (may be missing at random or not)
+
+    -   Impute the missing values
+
+    -   Some combination of the above options
+
+### Task 4: Choose your own Cleaner
+
+Drop Insulin and SkinThickness (not random), then drop any additional rows where any NA value is present (random)
+
+```{r}
+train <- train_na %>% select(-c(Insulin, SkinThickness)) %>% drop_na()
+test <- test_na %>% select(-c(Insulin, SkinThickness)) %>% drop_na()
+```
+
+Drop rows where any NA value is present (keeping Insulin and SkinThickness)
+
+```{r}
 train <- train_na %>% drop_na()
 test <- test_na %>% drop_na()
+```
 
-# OR
+Imputing the missing values
 
-train <- train_na %>% drop_na()
-test <- test_na %>% drop_na()
+-   k-nearest neighbors takes a sample with missing values and finds the k closest samples in the training set. The average of the k training set values for that predictor are used as a substitute for the original data. When calculating the distances to the training set samples, the predictors used in the calculation are the ones with no missing values for that sample and no missing values in the training set.
+-   Another approach is to fit a bagged tree model for each predictor using the training set samples. This is usually a fairly accurate model and can handle missing values. When a predictor for a sample requires imputation, the values for the other predictors are fed through the bagged tree and the prediction is used as the new value. This model can have significant computational cost.
+-   The median of the predictor's training set values can be used to estimate the missing data.
 
-# OR 
-
+```{r}
 # caret doesn't play too well with tibbles, so will convert to data.frame
-library(mice)
-train_na <- data.frame(train_na)
-test_na <- data.frame(test_na)
+train_na_df <- data.frame(train_na)
+test_na_df <- data.frame(test_na)
 
-train_pre_obj <- preProcess(train_na, method = "knnImpute", k = 20) # medianImpute / pca / bagImpute
-train <- predict(train_pre_obj, train_na)
-test <- predict(train_pre_obj, test_na)
+train_pre_obj <- preProcess(train_na_df, 
+                            method = "knnImpute", # medianImpute / bagImpute
+                            k = 20) 
+
+train <- predict(train_pre_obj, train_na_df)
+test <- predict(train_pre_obj, test_na_df)
 ```
 
+### Pipeline Step 5: clean_split_data.R
+
+-   *Step 5* of the Data Pipeline
+-   Input: takes in input and output commands via the terminal. Defining what the names of the raw train and raw test data files of interest are and what the created files will be named that will have appropriate train and test rows after further cleaning/imputation.
+-   Output: csv files of the cleaned/imputed train and test datasets.
+
 ```{r}
-# Checking Class Variable
+# library(optparse)
+# library(tidyverse)
+# library(mice)
+# library(caret)
+# 
+# option_list = list(
+#   make_option(c("-i","--input1"),
+#               type="character",
+#               default="train_raw.csv",
+#               help="dataset file name",
+#               metavar="character"
+#   ),
+#   make_option(c("-I","--input2"),
+#               type="character",
+#               default="test_raw.csv",
+#               help="dataset file name",
+#               metavar="character"
+#   ),
+#   make_option(c("-o","--output1"),
+#               type="character",
+#               default="train.csv",
+#               help="output training file name",
+#               metavar="character"
+#   ),
+#   make_option(c("-O","--output2"),
+#               type="character",
+#               default="test.csv",
+#               help="output test file name",
+#               metavar="character"
+#   )
+# );
+# 
+# opt_parser = OptionParser(option_list=option_list)
+# args = parse_args(opt_parser)
+# train_na <- read.csv(paste0("data/",args[1]))
+# test_na <- read.csv(paste0("data/",args[2]))
+# 
+# ### Desired split Cleaning Code needs to replace the code between the commented lines:
+# ### START of cleaning method code segment ###
+# train <- train_na %>% drop_na()
+# test <- test_na %>% drop_na()
+# ### END of cleaning method code segment ###
+# 
+# write.csv(train, paste0("data/",args[3]),row.names=FALSE)
+# write.csv(test, paste0("data/",args[4]),row.names=FALSE)
+```
+
+### Checking Class Variable Proportions
+
+```{r}
+ncolumns <- ncol(train) # Need to grab number of columns for indexing in evaluation steps
+
 prop.table(table(train$Diabetes))
 prop.table(table(test$Diabetes))
 ```
 
-```{r}
-fitControl <- trainControl(method = "cv", # k-fold Cross Validation (repeatedcv), bootstrap (boot) default, correlation (corr)
-                           number = 10, # default is random 10 - 25
-                           classProbs = TRUE, # default is FALSE
-                           summaryFunction = twoClassSummary) # default is defaultSummary
+## Training a Model
 
-learn_glm <- train(Diabetes~., data=train, method='glm', family='binomial', trControl = fitControl)
-pred_glm <- predict(learn_glm, test[,-9])
+-   Training a model simply means learning (determining) good values for all the weights and the bias from labeled examples from the train dataset.
+-   In supervised learning, a machine learning algorithm builds a model by examining many examples and attempting to find a model that minimizes loss.
+
+### Task 5: Fit your best model
+
+Estimating performance for classification:
+
+-   For 2--class classification models we might be interested in:
+
+    -   Sensitivity: given that a result is truly an event, what is the probability that the model will predict an event results?
+
+    -   Specificity: given that a result is truly not an event, what is the probability that the model will predict a negative results?
+
+The function `trainControl` generates parameters that further control how models are created, with possible values:
+
+-   method: resampling method
+    -   cv: divides your training dataset randomly into k-folds (k equalling the *number* parameter) and then using each of k parts as testing dataset for the model trained on other k-1. Takes the average of the k error terms thus obtained.
+    -   boot: consists of repeatedly selecting a sample of n observations from the original data set, and to evaluate the model on each copy. An average standard error is then calculated and the results provide an indication of the overall variance of the model performance.
+    -   repeatCV: will run cv methodology a total of m-separate times (m equaling the *repeats* parameter)
+    -   Many others: [rdocumentation](https://www.rdocumentation.org/packages/caret/versions/6.0-92/topics/trainControl)
+-   number: Number of folds or the number of resampling iterations
+-   repeats: For repeated k-fold cross-validation only: the number of complete sets of folds to compute
+-   classProbs: a logical; should class probabilities be computed for classification models (along with predicted values) in each resample?
+-   summaryFunction: a function to compute performance metrics across resamples
+
+```{r}
+fitControl <- trainControl(method = "cv", # repeatedcv, boot (default)
+                             number = 10, # default is random 10 - 25
+                             classProbs = TRUE, # default is FALSE
+                             summaryFunction = twoClassSummary, # default is defaultSummary
+                             repeats = 5 # default is 1
+                           )
+
+metric_targ <- 'Spec' # Sens, ROC, Prec
+```
+
+The function `train` sets up a grid of tuning parameters for a number of classification and regression routines, fits each model, and calculates a resampling based performance measure.
+
+-   data: Data frame from which variables specified in the formula are preferentially to be taken.
+
+-   method: a string specifying which classification or regression model to use.
+
+-   trControl: a list of values that define how this function acts. Where we pass the trainControl object, arguments.
+
+-   metric: a string that specifies what summary metric will be used to select the optimal model. By default, possible values are "RMSE" and "Rsquared" for regression and "Accuracy" and "Kappa" for classification.
+
+*Logistic Regression (method = 'glm', family = 'binomial')*: The logistic model (or logit model) is a statistical model that models the probability of an event taking place by having the log-odds for the event be a linear combination of one or more independent variables.
+
+```{r}
+learn_glm <- train(Diabetes~., 
+                   data=train, 
+                   method='glm', 
+                   family='binomial', 
+                   trControl = fitControl,
+                   metric=metric_targ)
+pred_glm <- predict(learn_glm, test[,-ncolumns])
 cm_glm <- confusionMatrix(pred_glm, test$Diabetes)
-results_glm <- c(cm_glm$byClass['Sensitivity'], cm_glm$byClass['Specificity'], cm_glm$byClass['F1'])
+cm_glm
+```
 
-learn_dt <- train(Diabetes~., data=train, method='rpart', trControl = fitControl)
-pred_dt <- predict(learn_dt, test[,-9])
+*Decision Trees (method = 'rpart')*: A decision tree is a decision support tool that uses a tree-like model of decisions and their possible consequences, including chance event outcomes, resource costs, and utility. It is one way to display an algorithm that only contains conditional control statements.
+
+```{r}
+learn_dt <- train(Diabetes~., 
+                  data=train, 
+                  method='rpart', 
+                  trControl = fitControl, 
+                  metric=metric_targ)
+pred_dt <- predict(learn_dt, test[,-ncolumns])
 cm_dt <- confusionMatrix(pred_dt, test$Diabetes)
-results_dt <- c(cm_dt$byClass['Sensitivity'], cm_dt$byClass['Specificity'], cm_dt$byClass['F1'])
+cm_dt
+```
 
-learn_rf <- train(Diabetes~., data=train, method='ranger', trControl = fitControl)
-pred_rf <- predict(learn_rf, test[,-9])
-cm_rf <- confusionMatrix(pred_rf, test$Diabetes)
-results_rf <- c(cm_rf$byClass['Sensitivity'], cm_rf$byClass['Specificity'], cm_rf$byClass['F1'])
+*k-Nearest Neighbors (method = 'knn')*: The k-nearest neighbors algorithm, also known as KNN or k-NN, is a non-parametric, supervised learning classifier, which uses proximity to make classifications or predictions about the grouping of an individual data point.
 
-learn_knn <- train(Diabetes~., data=train, method='knn', tuneGrid = expand.grid(.k=c(2:20)), trControl = fitControl)
-pred_knn <- predict(learn_knn, test[,-9])
+```{r}
+learn_knn <- train(Diabetes~., 
+                   data=train,
+                   method='knn', 
+                   tuneGrid = expand.grid(.k=c(2:20)), 
+                   trControl = fitControl, 
+                   metric=metric_targ)
+pred_knn <- predict(learn_knn, test[,-ncolumns])
 cm_knn <- confusionMatrix(pred_knn, test$Diabetes)
-results_knn <- c(cm_knn$byClass['Sensitivity'], cm_knn$byClass['Specificity'], cm_knn$byClass['F1'])
+cm_knn
+```
 
-xgb_grid_1 = expand.grid(
-  nrounds = 50,
-  eta = c(0.03),
-  max_depth = 1,
-  gamma = 0,
-  colsample_bytree = 0.6,
-  min_child_weight = 1,
-  subsample = 0.5
-)
-learn_xgbTree <- train(Diabetes~., data=train, method="xgbTree", tuneGrid=xgb_grid_1, trControl = fitControl)
-pred_xgbTree <- predict(learn_xgbTree, test[,-9])
-cm_xgbTree <- confusionMatrix(pred_xgbTree, test$Diabetes)
-results_xgbTree <- c(cm_xgbTree$byClass['Sensitivity'], cm_xgbTree$byClass['Specificity'], cm_xgbTree$byClass['F1'])
+*Stochastic Gradient Descent (method = 'gbm')*: Gradient boosting constructs additive regression models by sequentially fitting a simple parameterized function (base learner) to current "pseudo"-residuals by least squares at each iteration. The pseudo-residuals are the gradient of the loss functional being minimized, with respect to the model values at each training data point evaluated at the current step.
 
-learn_svm <- train(Diabetes~., data=train, method='svmLinear', trControl = fitControl)
-pred_svm <- predict(learn_svm, test[,-9])
+```{r}
+learn_sgb <- train(Diabetes~., 
+                   data=train, 
+                   method='gbm',
+                   verbose=FALSE, 
+                   trControl = fitControl, 
+                   metric=metric_targ)
+pred_sgb <- predict(learn_sgb, test[,-ncolumns])
+cm_sgb <- confusionMatrix(pred_sgb, test$Diabetes)
+cm_sgb
+```
+
+*Support Vector Machines (method = 'svmLinear')*: The objective of the support vector machine algorithm is to find a hyperplane in an N-dimensional space(N --- the number of features) that distinctly classifies the data points by attempting to split the data points in as optimal a way as possible to predict classification.
+
+```{r}
+learn_svm <- train(Diabetes~., 
+                   data=train, 
+                   method='svmLinear',
+                   trControl = fitControl)
+pred_svm <- predict(learn_svm, test[,-ncolumns])
 cm_svm <- confusionMatrix(pred_svm, test$Diabetes)
-results_svm <- c(cm_svm$byClass['Sensitivity'], cm_svm$byClass['Specificity'], cm_svm$byClass['F1'])
-
-results <- data.frame(rbind(results_glm, results_dt, results_rf, results_knn, results_xgbTree, results_svm))
-names(results) <- c("Sensitivity", "Specificity", "F1")
-results
+cm_svm
 ```
+
+### Pipeline Step 6: train_model.R
+
+-   *Step 6* of the Data Pipeline
+-   Input: takes in input and output commands via the terminal. Defining what the names of the final train data file of interest is and what the created, fitted model will be named.
+-   Output: .rds file fit on the training dataset
 
 ```{r}
-# Need to have TrainControl set & metric = "ROC" in train()
-model_list <- list(GLM=learn_glm, DT=learn_dt , RF=learn_rf, kNN=learn_knn, xgbTree=learn_xgbTree)
-resamples <- resamples(model_list)
-bwplot(resamples, metric="ROC") 
+# library(caret)
+# library(optparse)
+# set.seed(123)
+# 
+# option_list = list(
+#   make_option(c("-i","--input"),
+#               type="character",
+#               default="train.csv",
+#               help="dataset file name",
+#               metavar="character"
+#   ),
+#   make_option(c("-o","--output"),
+#               type="character",
+#               default="model.rds",
+#               help="output model file name",
+#               metavar="character"
+#   )
+# );
+# 
+# opt_parser = OptionParser(option_list=option_list)
+# args = parse_args(opt_parser)
+# train <- read.csv(paste0("data/",args[1]))
+# 
+# ### Desired fit/model  Code needs to replace the code between the commented lines:
+# ### START of fit code segment ###
+# fitControl <- trainControl(method = "cv",
+#                            number = 10, 
+#                            classProbs = TRUE, 
+#                            summaryFunction = twoClassSummary,
+#                            )
+#
+# fit <- train(Diabetes~., data=train, method='rpart', trControl = fitControl, metric="Spec")
+# ### END of fit code segment ###
+#
+# saveRDS(fit, file=paste0("data/",args[2]))
 ```
+
+## Evaluate the Model
+
+Now we'll test out our model, fit on the training dataset, to an unseen test set.
 
 ```{r}
-library(rpart.plot)
-rpart.plot(learn_dt$finalModel)
+predict <- predict(learn_dt, test[,-ncolumns])
+cm <- confusionMatrix(predict, as.factor(test$Diabetes))
+cm
 ```
+
+An ROC curve is a really useful shortcut for summarizing the performance of a classifier over all possible thresholds.
 
 ```{r}
-# train_model.R
-fitControl <- trainControl(method = "cv", # k-fold Cross Validation (repeatedcv), bootstrap (boot) default, correlation (corr)
-                           number = 10, # default is random 10 - 25
-                           classProbs = TRUE, # default is FALSE
-                           summaryFunction = twoClassSummary) # default is defaultSummary
-
-model <- train(Diabetes~., data=train, method='glm', family='binomial', trControl = fitControl)
-
-# TO DO: Save 'model' to RDS to be saveRDS(), import files
+predict <- predict(learn_dt, test[,-ncolumns],type='prob')
+colAUC(predict, test[,ncolumns], plotROC=TRUE)
 ```
+
+### Pipeline Step 7: evaluate_model.R
+
+-   *Step 7* of the Data Pipeline
+-   Input: takes in input commands via the terminal. Defining what the name of the rds data file for the fitted model.
+-   Output: Print out in the console the appropriate confusion matrix and other performance metrics.
 
 ```{r}
-# evaluate_model.R
-predict <- predict(model, test[,-9])
-cm <- confusionMatrix(predict, test$Diabetes)
-
-# TO DO: Import files
+# library(caret)
+# library(optparse)
+# 
+# option_list = list(
+#   make_option(c("-i","--input1"),
+#               type="character",
+#               default="test.csv",
+#               help="dataset file name",
+#               metavar="character"
+#   ),
+#   make_option(c("-I","--input2"),
+#               type="character",
+#               default="model.rds",
+#               help="model/fit file name",
+#               metavar="character"
+#   )
+# );
+# 
+# opt_parser = OptionParser(option_list=option_list)
+# args = parse_args(opt_parser)
+# test <- read.csv(paste0("data/",args[1]))
+# fit <- readRDS(paste0("data/",args[2]))
+# 
+# predict <- predict(fit, test[,-nrow(test)])
+# cm <- confusionMatrix(predict, as.factor(test$Diabetes))
+# print(cm)
 ```
+
+## Future Discussions
+
+1.  Tuning your parameters (expand.grid, trainControl, etc.)
+
+2.  Feature Selection Algorithms (correlation, RF, etc.)
+
+3.  Balancing Datasets
