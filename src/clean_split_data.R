@@ -35,8 +35,8 @@ args = parse_args(opt_parser)
 train_raw <- read.csv(paste0("data/",args[1]))
 test_raw <- read.csv(paste0("data/",args[2]))
 
-train <- train_raw %>% drop_na()
-test <- test_raw %>% drop_na()
+train <- ???
+test <- ???
 
 write.csv(train, paste0("data/",args[3]),row.names=FALSE)
 write.csv(test, paste0("data/",args[4]),row.names=FALSE)

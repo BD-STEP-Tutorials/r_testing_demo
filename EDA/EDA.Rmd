@@ -99,9 +99,10 @@ duckdb_register(con, name = "data", df = data_raw)
 
 # Question 1: What SQL query can we run to explore the first few rows of the dataset?
 query <-
-    "SELECT * 
-     FROM data 
-     limit 5
+    "--Write your query below
+    
+    
+    
     "
 
 # Send the SQL query via the connection to the virtual table and fetch the result
@@ -122,11 +123,11 @@ duckdb_register(con, name = "data", df = data_raw)
 
 # Question 2: How can we get the count for number of instances of 0 values for Insulin?
 query <- 
-  "
-    SELECT Insulin, COUNT(*) as Zero_Count
-    FROM data
-    WHERE Insulin = 0
-    GROUP BY Insulin
+  "--Write your query below
+  
+  
+  
+  
   "
 
 # Send the SQL query via the connection to the virtual table and fetch the result
@@ -174,10 +175,12 @@ duckdb_register(con, name = "data", df = diab)
 # in any of the variables: Glucose, BloodPressure, SkinThickness, Insulin, or BMI
 
 query <- 
-  "
-    SELECT COUNT(*)
-    FROM data
-    WHERE Glucose = 0 or BloodPressure = 0 or SkinThickness = 0 or Insulin = 0 or BMI = 0
+  "--Write your query below
+  
+  
+  
+  
+    
   "
 
 con %>%
@@ -451,8 +454,8 @@ test <- predict(train_pre_obj, test_na_df)
 # 
 # ### Desired split Cleaning Code needs to replace the code between the commented lines:
 # ### START of cleaning method code segment ###
-# train <- train_raw %>% drop_na()
-# test <- test_raw %>% drop_na()
+# train <- ???
+# test <- ???
 # ### END of cleaning method code segment ###
 # 
 # write.csv(train, paste0("data/",args[3]),row.names=FALSE)
@@ -616,17 +619,17 @@ cm_svm
 # ### Desired fit/model  Code needs to replace the code between the commented lines:
 # ### START of fit code segment ###
 #
-# fitControl <- trainControl(method = "cv",
-#                            number = 10, 
-#                            classProbs = TRUE,
-#                            summaryFunction = twoClassSummary,
+# fitControl <- trainControl(method = ???,
+#                            number = ???, 
+#                            classProbs = ???,
+#                            summaryFunction = ???
 #                            )
 # 
 # fit <- train(Diabetes~.,
 #              data=train,
-#              method='rpart',
+#              method=???,
 #              trControl = fitControl,
-#              metric="Spec")
+#              metric=???)
 #
 # ### END of fit code segment ###
 # 

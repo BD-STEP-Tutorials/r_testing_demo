@@ -22,12 +22,16 @@ opt_parser = OptionParser(option_list=option_list)
 args = parse_args(opt_parser)
 train <- read.csv(paste0("data/",args[1]))
 
-fitControl <- trainControl(method = "cv", # k-fold Cross Validation (repeatedcv), bootstrap (boot) default, correlation (corr)
-                           number = 10, # default is random 10 - 25
-                           classProbs = TRUE, # default is FALSE
-                           summaryFunction = twoClassSummary, # default is defaultSummary
+fitControl <- trainControl(method = ???,
+                           number = ???, 
+                           classProbs = ???,
+                           summaryFunction = ???,
                            )
 
-fit <- train(Diabetes~., data=train, method='rpart', trControl = fitControl, metric="Spec")
+fit <- train(Diabetes~., 
+              data=train, 
+              method=???, 
+              trControl = fitControl, 
+              metric=???)
 
 saveRDS(fit, file=paste0("data/",args[2]))
