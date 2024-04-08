@@ -36,5 +36,5 @@ In RStudio, use the File menu to open the `/workspaces`, folder and then browse 
 * [Dev Containers](https://containers.dev/) - Overview and specification
 * [Dev Containers in Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) - Remote-Containers extension 
 * [Visual Studio Code](https://code.visualstudio.com/) - Free editor available for Windows, Mac and Linux
-* [ROxygen2]((https://cran.r-project.org/web/packages/roxygen2/)) - roxygen2: In-Line Documentation for R
+* [ROxygen2](https://cran.r-project.org/web/packages/roxygen2/) - roxygen2: In-Line Documentation for R
 
