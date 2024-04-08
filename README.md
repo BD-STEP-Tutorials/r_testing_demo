@@ -3,6 +3,8 @@
 
 -   Using R this interactive presentation will demonstrate how to document your own R packages and objects using the built-in ROxygen2 library.
 
+-   Can use the src/starter_code.R file to help create your own package.
+
 ## Documentation
 There will be various audiences who will read your code:
 * People interested in your research.
