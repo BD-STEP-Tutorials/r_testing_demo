@@ -1,10 +1,10 @@
 Package: documentPackage
-Title: What the Package Does (One Line, Title Case)
+Title: R Documentation with Roxygen
 Version: 0.0.0.9000
 Authors@R: 
     person("Trevor", "Michelson", , "trmichel@bu.edu", role = c("aut", "cre"),
            comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
+Description: Demo of generaing documentation for user-defined function objects in a R Package use library Roxygen2. 
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

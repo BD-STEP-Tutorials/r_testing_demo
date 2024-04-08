@@ -1,10 +1,10 @@
 
-# documPackage
+# documentPackage
 
 <!-- badges: start -->
 <!-- badges: end -->
 
-The goal of documPackage is to ...
+The goal of documentPackage is to ...
 
 ## Installation
 
@@ -20,7 +20,7 @@ devtools::install_github("TRMichelson/r_documentation_demo")
 This is a basic example which shows you how to solve a common problem:
 
 ``` r
-library(documPackage)
+library(documentPackage)
 ## basic example code
 ```
 
