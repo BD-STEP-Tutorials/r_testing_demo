@@ -72,7 +72,7 @@ Tags serve as annotations or directives within special comment blocks of roxygen
 
 **@return**: Tag is used to document the return value of an object.
 
-**@export**: Used to indicate that a specific function should be exported from the package namespace. 
+**@export**: Used to indicate that a specific function should be exported from the package NAMESPACE. 
 
 **@rdname**: By default, the .Rd file associated with objects in R will be titled _name-of-object_.Rd. This tag is used to specify the name of the documentation file where this object's documentation should be placed.
 
