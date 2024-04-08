@@ -67,13 +67,13 @@ Tags serve as annotations or directives within special comment blocks of roxygen
 
 **@export**: Used to indicate that a specific function should be exported from the package namespace. 
 
-**@rdname**: By default, the .Rd file associated with objects in R will be titled <name of object>.Rd. This tag is used to specify the name of the documentation file where this object's documentation should be placed.
+**@rdname**: By default, the .Rd file associated with objects in R will be titled _name-of-object_.Rd. This tag is used to specify the name of the documentation file where this object's documentation should be placed.
 
 ### General Tips
 After creating/modifying comments in .R files, can use either method to save changes to .Rd files:
 * *devtools::documentation()*
 * *roxygen2::roxygenize()*
-It’s also good to click the _Build > Install_ button in Rstudio, which will restart R and install the package, after you have made major changes. Changes may not be reflected until a restart is initiated. 
+It’s also good to click the _Build > Install_ button in Rstudio <img src="misc/img/install_button.png" width="75"/> , which will restart R and install the package, after you have made major changes. Changes may not be reflected until a restart is initiated. 
 
 ### Overall Paradigm Visualized
 ![Flow Chart](misc/img/flow_diagram_doc.png)
