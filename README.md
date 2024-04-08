@@ -38,6 +38,11 @@ The LICENSE and LICENSE.md files relate to specifying the licensing terms under 
 * The .md file provides the license in a markdown format.
 Can use the *usethis::use_mit_license()* method to generate LICENSE files.
 
+### NAMESPACE File
+A namespace file in Roxygen manages the exports and imports of functions and objects within a package.
+* Exports: The namespace file specifies which functions, objects, or data sets are meant to be visible to users of the package. It essentially defines the "public interface" of the package.
+* Imports: If your package depends on functions or objects from other packages, you can specify these dependencies in the namespace file. 
+
 ## ROxygen2 Library
 R provides a standard way of documenting packages: you write .Rd files in the man/ directory which connect to corresponding .R files. 
 
