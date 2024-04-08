@@ -27,7 +27,7 @@ In RStudio, use the File menu to open the `/workspaces`, folder and then browse 
 
 -   Using R this interactive presentation will demonstrate how to document your own R packages and objects using the built-in ROxygen2 library.
 
-![Flow Chart](/misc/img/flow_diagram.png)
+![Flow Chart](misc/img/flow_diagram_doc.png)
 
 # Resources and Links
 
