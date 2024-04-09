@@ -86,7 +86,7 @@ It’s also good to click the _Build > Install_ button in Rstudio <img src="misc
 ![Flow Chart](misc/img/flow_diagram_doc.png)
 
 ### Connecting R Objects to R Documentation (e.g. beta_dist.R)
-
+![RDoc Chart](misc/img/r_documetation_connections.png)
 
 # Zero-setup R-Studio with GitHub Codespaces
 
