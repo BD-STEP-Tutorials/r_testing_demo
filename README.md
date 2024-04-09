@@ -82,8 +82,11 @@ After creating/modifying comments in .R files, can use either method to save cha
 * *roxygen2::roxygenize()*
 It’s also good to click the _Build > Install_ button in Rstudio <img src="misc/img/install_button.png" width="75"/> , which will restart R and install the package, after you have made major changes. Changes may not be reflected until a restart is initiated. 
 
-### Overall Paradigm Visualized
+### Overall Package Structure w/ ROxygen
 ![Flow Chart](misc/img/flow_diagram_doc.png)
+
+### Connecting R Objects to R Documentation (e.g. beta_dist.R)
+
 
 # Zero-setup R-Studio with GitHub Codespaces
 
