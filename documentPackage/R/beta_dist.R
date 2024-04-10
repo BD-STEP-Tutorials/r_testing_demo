@@ -52,7 +52,6 @@ get_beta_parameters <- function(population_avg, population_var){
 #' @return a numeric object
 #'
 #' @export
-#'
 beta_mu <- function(alpha, beta){
 
   mu <- alpha / (alpha + beta)
@@ -67,7 +66,6 @@ beta_mu <- function(alpha, beta){
 #' @return a numeric object
 #'
 #' @export
-#'
 beta_sd <- function(alpha, beta){
 
   s <- sqrt((alpha * beta) / ((alpha + beta)^2 * (alpha + beta + 1)))

@@ -30,7 +30,8 @@ describing the variance of the population}
 \description{
 Functions for the gamma distribution to calculate priors and
 posteriors.
-
+}
+\details{
 The gamma distribution should be used as a rate per event, the distribution
 being predicting is a value between 0 and inf. Think of this as runs/game
 like in baseball.
