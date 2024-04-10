@@ -119,3 +119,4 @@ In RStudio, use the File menu to open the `/workspaces`, folder and then browse 
 * [Dev Containers in Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) - Remote-Containers extension 
 * [Visual Studio Code](https://code.visualstudio.com/) - Free editor available for Windows, Mac and Linux
 * [ROxygen2](https://cran.r-project.org/web/packages/roxygen2/) - roxygen2: In-Line Documentation for R
+* [Beta and Gamma Distributions](https://bookdown.org/probability/beta/beta-and-gamma.html) - Beta and Gamma Distributions
