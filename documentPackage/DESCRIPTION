@@ -1,10 +1,10 @@
-Package: documentPackage
-Title: R Documentation with Roxygen
+Package: testingPackage
+Title: R Testing with testthat
 Version: 0.0.0.9000
 Authors@R: 
     person("Trevor", "Michelson", , "trmichel@bu.edu", role = c("aut", "cre"),
            comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: Demo of generaing documentation for user-defined function objects in a R Package use library Roxygen2. 
+Description: Demo of generaing testing for objects in a R Package using library testthat. 
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

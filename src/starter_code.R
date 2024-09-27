@@ -11,7 +11,7 @@ usethis::use_mit_license("./r_documentation_demo/documentPackage/")
 usethis::use_readme_md("./r_documentation_demo/documentPackage/")
 
 ## 
-usethis::use_testthat()
+usethis::use_testthat("./r_testing_demo/")
 
 ## Creates "tests" folder
 ## adds testthat as a suggests into your DESCRIPTION file
@@ -29,7 +29,7 @@ devtools::test()
 ## Check Test Coverage - % of lines of code in your packaged tested
 devtools::test_coverage()
 
-##
+## 
 
 
 
