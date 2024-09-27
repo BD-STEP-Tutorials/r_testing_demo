@@ -1,17 +1,18 @@
 ## create a new package in the root folder
 
-usethis::create_package("./r_documentation_demo/documentPackage")
+usethis::create_package("./r_testing_demo/testingPackage")
 
 ## fill in Description and Add license
 
-usethis::use_mit_license("./r_documentation_demo/documentPackage/")
+usethis::use_mit_license("./r_testing_demo/testingPackage/")
 
 ## create a ReadMe file and skeleton
 
-usethis::use_readme_md("./r_documentation_demo/documentPackage/")
+usethis::use_readme_md("./r_testing_demo/testingPackage/")
 
 ## 
-usethis::use_testthat("./r_testing_demo/")
+setwd("/workspaces/r_testing_demo/testingPackage")
+usethis::use_testthat() # must have working directory set to project to use
 
 ## Creates "tests" folder
 ## adds testthat as a suggests into your DESCRIPTION file
