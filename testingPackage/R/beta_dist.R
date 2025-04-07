@@ -31,7 +31,10 @@
 #' beta_parameters
 #'
 #' @export
-get_beta_parameters <- function(population_avg, population_var){
+get_beta_parameters <- function(population_avg, population_var) {
+  
+  stopifnot(is.numeric(population_avg))
+  stopifnot(is.numeric(population_var))
 
   alpha <- population_avg * (population_avg * (1 - population_avg)/population_var - 1)
   beta <- alpha * (1 - population_avg)/population_avg
@@ -71,4 +74,73 @@ beta_sd <- function(alpha, beta){
   s <- sqrt((alpha * beta) / ((alpha + beta)^2 * (alpha + beta + 1)))
   return(s)
 
+}
+
+#' Calculate Posterior mu based on Beta distribution
+#'
+#' Calculate posterior mu and sd given priors, observations, and n success to
+#' calculate
+#'
+#' @param prior_alpha beta distribution alpha parameter from population
+#' @param prior_beta beta distribution beta parameter from population
+#' @param n numeric value representing number of observations
+#' @param success numeric value representing the number of success (positive) observations
+#'
+#' @rdname posterior_beta
+#'
+#' @export
+#'
+#' @examples
+#'
+#' ## Set up
+#'
+#' library(tidyverse)
+#'
+#' pop_avg <- pima %>%
+#'  dplyr::pull(mass) %>%
+#'  mean()
+#'
+#' pop_var <- pima %>%
+#'  dplyr::pull(mass) %>%
+#'  var() 
+#'
+#' mass_avg_params <- get_beta_parameters(
+#'   population_avg = pop_avg,
+#'   population_var = pop_var
+#' )
+#'
+#' ma_alpha_prior <- mass_avg_params$alpha
+#' ma_beta_prior <- mass_avg_params$beta
+#'
+#' ## Using the functions
+#'
+#' set.seed(559)
+#'
+#' small_mass <- pima %>%
+#'  sample_n(size = 10)
+#'
+#' small_mass %>%
+#'    mutate(
+#'       posterior_batting_avg = posterior_beta_mu(ma_alpha_prior, ma_beta_prior, n = DB, success = 1),
+#'       posterior_batting_sd = posterior_beta_sd(ma_alpha_prior, ma_beta_prior, n = DB, success = 1)
+#'       )
+#'
+posterior_beta_mu <- function(prior_alpha, prior_beta, n, success){
+  
+  posterior_alpha <- prior_alpha + success
+  posterior_beta <- prior_beta + (n - success)
+  
+  mu <- posterior_alpha / (posterior_alpha + posterior_beta)
+  return(mu)
+}
+
+#' @rdname posterior_beta
+#' @export
+posterior_beta_sd <- function(prior_alpha, prior_beta, n, success){
+  
+  posterior_alpha <- prior_alpha + success
+  posterior_beta <- prior_beta + (n - success)
+  
+  s <- sqrt(pmax((posterior_alpha * posterior_beta) / ((posterior_alpha + posterior_beta)^2 * (posterior_alpha + posterior_beta + 1)),0))
+  return(s)
 }
