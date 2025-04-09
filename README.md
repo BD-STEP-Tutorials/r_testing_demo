@@ -1,18 +1,9 @@
 # Expectations of this Presentation
 -   This presentation will expand upon the *Good Practices in Reproducible Data Science* series.
 
--   Using R this interactive presentation will demonstrate how to add testing your own R packages and objects using the built-in testhat library.
+-   Using R this interactive presentation will demonstrate how to add testing to your own R packages and objects using the built-in `testhat` library.
 
--   Can use the src/starter_code.R file to help create your own package and testing.
-
-## Testing and Validation
-
-## testthat Library
-
-### Basic Process
-
-### General Tips
-
+-   Can use the r_resting_demo/starter_code.Rmd file to help create your own package and testing.
 
 # Zero-setup R-Studio with GitHub Codespaces
 
