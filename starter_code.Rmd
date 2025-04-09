@@ -1,0 +1,146 @@
+---
+title: "Unit Testing"
+output: html_document
+date: "2025-04-09"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## What is Unit Testing
+
+* Unit testing is the process of writing automated testing for snippets of code, typically function objects
+<br><br>
+* Each test validates whether the function behaves as expected given inputs
+  * Ensure functions work 
+  * Catch bugs early
+  * Helps to document expected behavior
+<br><br>
+* Unit implies “single”, so each unit test should test each function independently
+
+## Unit Testing in R
+
+* `testthat` is the most built-in popular R package for writing unit tests in R
+  * Python equivalents: pytest, unittest, doctest, nose2
+<br><br>
+* `usethis` helps to manage and set up tests in packages
+  * Python does not have a single package equivalent, but combinations of tools like cookiecutter, pytest, and setuptools replicate it
+<br><br>
+* General workflow:
+  1. Use the usethis package to initialize testing directory and files
+  2. Write the tests for each function object
+  3. Run tests using the devtools package
+
+##  `usethis` and Unit Testing
+* Package in R used to help automate repetitive setup tasks in R packages. Helps to setup:
+  * Packages and infrastructure
+  * Documentation
+  * Git/Github
+<br><br>
+* For unit testing, helps to setup and organize the testthat framework
+  * Initializing a directory within the project for tests
+  * Creating test files for function objects
+  * Easily run testing and get metric breakdown of successes/failures
+
+## Getting Started
+
+### Setting up the Package
+
+For all projects you're working on, you should start by generating a package in R to consolidate all your project code.
+
+```{r eval=FALSE}
+## create a new package in the root folder
+
+usethis::create_package("testingPackage")
+
+## fill in Description and Add license
+
+usethis::use_mit_license("testingPackage/")
+
+## create a ReadMe file and skeleton
+
+usethis::use_readme_md("testingPackage/")
+```
+
+### 1. Creating the Testing Directory
+
+Unit testing packages will often use dedicated directories for the test files. Allowing for 
+separation of domains (main code, modules, test code, etc.), organized testing location to allow
+for easy discovery, and avoiding accidental execution. 
+
+`usethis::use_testthat()`
+
+* Sets up the testing folders/infrastructure for the package
+* Adds testthat to Suggests attribute in DESCRIPTION file
+* Creates tests/testthat/ directory and a rudimentary test file
+
+```{r eval=FALSE}
+usethis::use_testthat()
+```
+
+### Creating Data Directories
+
+For the same benefits of creating a dedicated directory for test files, dedicating a directory for
+data files has the same benefits (i.e. organization, execution avoidance).
+
+`usethis::use_data_raw()`
+
+* Creates data-raw/ folder
+* Adds a script (data-raw/dataset_name.R) for importing and cleaning raw data
+
+```{r eval=FALSE}
+usethis::use_data_raw()
+```
+
+## 2. Create a test file
+
+`usethis::use_test("function_name")`
+
+* Adds a new test file in `tests/testthat/` directory for the specified function or feature
+* File naming convention is to attach `test-` to the beginning of `function_name` (e.g. `test-function_name.R`)
+* It is not necessary to have one .R file per function, it is often cleaner and more practical to group functions 
+that are closely related to help avoid cluttering the `tests` directory. 
+
+```{r eval=FALSE}
+usethis::use_test(“function_name”)
+usethis::use_test(“gamma”)
+```
+
+### Types of testing functions
+
+The `testthat::test_that(desc, code)` function takes in as arguments:
+* `desc` the name of the test
+* `code` the test code containing a series of expectations being evaluated for testing, where the expectations are
+defined via `expect_*()` functions
+
+#### Common expect_*() Functions
+
+- `expect_equal()` expects a set of outputs to be an exact value match
+- `expect_true()` expects a result of logical TRUE
+- `expect_false()` expects a result of logical FALSE
+- `expect_snapshot()` expects an output to of code (value, table, etc.) to be the same from a previous run
+- `expect_error()` expects an error to be produced, but does not crash the program
+  - Uses the `stopifnot()` function to throw an error back to the `expect_error()` function call
+
+## 3. Confirm your tests run
+
+`devtools::test()`
+
+* Runs all of the tests in the directory `tests/testthat/` using various `testthat` functions
+* Will output all of the tests warnings/passes/failures
+* Provide error messages for the warnings and failures
+
+```{r eval=FALSE}
+devtools::test()
+```
+
+`devtools::test_coverage()`
+
+* Measures how much of the executed test code covers your code base by line
+  * Excludes blank lines, comments, and Roxygen headers
+* Highlights the lines of code covered and provides percentages to for each .R file of code coverage. 
+
+```{r eval=FALSE}
+devtools::test_coverage()
+```
