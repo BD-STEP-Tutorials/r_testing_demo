@@ -3,7 +3,7 @@
 
 -   Using R this interactive presentation will demonstrate how to add testing to your own R packages and objects using the built-in `testhat` library.
 
--   Can use the r_resting_demo/starter_code.Rmd file to help create your own package and testing.
+-   Can use the [r_resting_demo/starter_code.Rmd](starter_code.Rmd) file to help create your own package and testing.
 
 # Zero-setup R-Studio with GitHub Codespaces
 
