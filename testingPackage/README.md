@@ -13,7 +13,7 @@ You can install the development version of testingPackage from [GitHub](https://
 ``` r
 # install.packages("testthat")
 # install.packages("devtools")
-devtools::install_github("TRMichelson/r_testing_demo")
+devtools::install_github("BD-STEP-Tutorials/r_testing_demo")
 ```
 
 ## Guide
